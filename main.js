@@ -72,11 +72,11 @@ async function runTasks(shellNums) {
 }
 
 async function scheduleBatches() {
-  const taskBatches = [
+  const taskBatches = {[
     [8579, 5890, 5946, 5974, 5990, 6184, 6218, 6318, 7826, 13268],
     [13321, 13579, 13738, 13828, 2213, 2227, 2269, 2297, 2325, 2339],
     [2353, 2367, 2381, 2409, 2451, 2465, 2479, 2507, 2521, 2535],
-  ];
+  ]}
 
   let currentBatch = 0;
 
