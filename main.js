@@ -70,8 +70,8 @@ async function runTasks(shellNums) {
 async function main() {
   const tasks = [
     runTasks([8579, 5890, 5946]),
-    // runTasks([8989, 1593, 9282]),
-    // runTasks([7283, 1082, 1382]),
+    runTasks([8989, 1593, 9282]),
+    runTasks([7283, 1082, 1382]),
   ];
 
   // Run all tasks concurrently
