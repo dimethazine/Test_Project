@@ -3,6 +3,7 @@ const login = require("./login");
 const fetchDealershipHours = require("./fetchDealershipHours");
 const fetchPendingWritesCount = require("./fetchPendingWritesCount");
 const resubmitter = require("./resubmitter");
+const fetchCompanyIds = require("./SnowflakeSQL");
 
 async function initBrowser() {
   const browser = await chromium.launch({ headless: false });
@@ -63,7 +64,7 @@ async function runTasks(shellNums) {
       i--;
       continue;
     } finally {
-      await new Promise((resolve) => setTimeout(resolve, 1 * 1000)); // wait 20 seconds
+      await new Promise((resolve) => setTimeout(resolve, 30 * 1000)); // wait 20 seconds
     }
   }
 
@@ -72,11 +73,31 @@ async function runTasks(shellNums) {
 }
 
 async function scheduleBatches() {
-  const taskBatches = {[
+  try {
+    const companyIds = await fetchCompanyIds();
+    console.log(companyIds);
+
+    const taskBatches = chunkArray(companyIds, 10);
+
+    for (let batch of taskBatches) {
+      await runTasks(batch);
+    }
+  } catch (error) {
+    console.error(`error fetching company ID's: ${error}`);
+  }
+}
+
+function chunkArray(array, size) {
+  return array.reduce((acc, e, i) => {
+    return (i % size ? acc[acc.length - 1].push(e) : acc.push([e])) && acc;
+  }, []);
+}
+/*
+  const taskBatches = [
     [8579, 5890, 5946, 5974, 5990, 6184, 6218, 6318, 7826, 13268],
     [13321, 13579, 13738, 13828, 2213, 2227, 2269, 2297, 2325, 2339],
     [2353, 2367, 2381, 2409, 2451, 2465, 2479, 2507, 2521, 2535],
-  ]}
+  ];
 
   let currentBatch = 0;
 
@@ -92,7 +113,7 @@ async function scheduleBatches() {
     setTimeout(executeBatch, 1 * 60 * 1000); // 5 minute wait
   }
   executeBatch();
-}
+}*/
 
 scheduleBatches().catch(console.error);
 /*
