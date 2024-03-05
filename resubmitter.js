@@ -1,3 +1,10 @@
+// TODO
+// Add a counter for each batch which resets on the next task
+// log to console the total resubmit count for each batch
+// Reset the counter for each batch
+// Have two separate counters, one for the current batch and one for the total resubmit count of the task loop
+// current batch reset on batch end; total resubmit count reset on task loop end
+
 async function extractLoopCompanyId(page) {
   const divText = await page.textContent("#divLegal");
   const idMatch = divText.match(/ID#\s(\d+)/);
@@ -104,7 +111,6 @@ function containsError(errorText) {
 }
 
 async function resubmitter(page) {
-  // First, extract the loopCompanyId
   const loopCompanyId = await extractLoopCompanyId(page);
   if (!loopCompanyId) {
     console.error("Failed to extract loopCompanyId");
@@ -127,7 +133,6 @@ async function resubmitter(page) {
       );
 
       if (resubmitID) {
-        // Assuming the rest of the logic for resubmission is correct
         const response = await page.evaluate(
           async ({ resubmitID, loopCompanyId }) => {
             try {
@@ -142,7 +147,7 @@ async function resubmitter(page) {
                     loopCompanyId: loopCompanyId,
                     appointmentId: resubmitID,
                   }),
-                  credentials: "include", // Ensure cookies/session are included with the request
+                  credentials: "include",
                 }
               );
               if (!response.ok) {
@@ -154,7 +159,7 @@ async function resubmitter(page) {
             }
           },
           { resubmitID, loopCompanyId }
-        ); // Wrap resubmitID and loopCompanyId into an object
+        );
 
         console.log(`Response for ${resubmitID}:`, response);
       }
