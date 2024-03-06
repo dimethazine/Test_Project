@@ -5,7 +5,7 @@ const fetchPendingWritesCount = require("./fetchPendingWritesCount");
 const resubmitter = require("./resubmitter");
 
 async function initBrowser() {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless: false });
   const context = await browser.newContext();
   const page = await context.newPage();
   await login(page);
