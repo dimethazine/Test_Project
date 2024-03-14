@@ -4,6 +4,7 @@
 // Reset the counter for each batch
 // Have two separate counters, one for the current batch and one for the total resubmit count of the task loop
 // current batch reset on batch end; total resubmit count reset on task loop end
+// Check which dealerships continue to fail the same appointment writes and send an email to whomever
 
 async function extractLoopCompanyId(page) {
   const divText = await page.textContent("#divLegal");
@@ -111,6 +112,7 @@ function containsError(errorText) {
 }
 
 async function resubmitter(page) {
+  let resubmitCount = 0;
   const loopCompanyId = await extractLoopCompanyId(page);
   if (!loopCompanyId) {
     console.error("Failed to extract loopCompanyId");
@@ -161,10 +163,15 @@ async function resubmitter(page) {
           { resubmitID, loopCompanyId }
         );
 
+        if (response && !response.error) {
+          resubmitCount++;
+        }
+
         console.log(`Response for ${resubmitID}:`, response);
       }
     }
   }
+  return { resubmitCount };
 }
 
 module.exports = resubmitter;

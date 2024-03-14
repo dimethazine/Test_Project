@@ -4,15 +4,17 @@ const fetchDealershipHours = require("./fetchDealershipHours");
 const fetchPendingWritesCount = require("./fetchPendingWritesCount");
 const resubmitter = require("./resubmitter");
 
+const runInParallel = true;
+
 async function initBrowser() {
-  const browser = await chromium.launch({ headless: false });
+  const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext();
   const page = await context.newPage();
   await login(page);
   return { browser, page };
 }
 
-async function runTasks(shellNums) {
+async function runTasks(shellNums, totalResubmitCount) {
   let { browser, page } = await initBrowser();
 
   for (let i = 0; i < shellNums.length; i++) {
@@ -50,7 +52,10 @@ async function runTasks(shellNums) {
         "https://autoloop.us/DMS/App/DealershipSettings/PendingAppointmentWrites.aspx"
       );
 
-      await resubmitter(page);
+      var { resubmitCount } = await resubmitter(page);
+      console.log(`Resubmit Count: ${resubmitCount}`);
+      totalResubmitCount += resubmitCount;
+      console.log(`Total resubmit count: ${totalResubmitCount}`);
     } catch (error) {
       console.error(`Error occurred while processing ${shellNums[i]}:`, error);
       try {
@@ -63,12 +68,13 @@ async function runTasks(shellNums) {
       i--;
       continue;
     } finally {
-      await new Promise((resolve) => setTimeout(resolve, 1 * 1000)); // wait 20 seconds
+      await new Promise((resolve) => setTimeout(resolve, 1 * 500)); // wait 20 seconds
     }
   }
 
   console.log(`Completed tasks for: ${shellNums.join(", ")}`);
   await browser.close();
+  return totalResubmitCount;
 }
 
 async function scheduleBatches() {
@@ -203,6 +209,53 @@ async function scheduleBatches() {
     7241, 8780,
   ];
 
+  let totalResubmitCount = 0;
+
+  if (runInParallel) {
+    const batchPromises = taskBatches.map(async (batch) => {
+      const currentDealerBatch = batch.filter(
+        (dealer) => !dealershipsToSkip.includes(dealer)
+      );
+      return runTasks(currentDealerBatch, 0);
+    });
+
+    const totalCount = await Promise.all(batchPromises);
+    totalResubmitCount = totalCount.reduce((acc, curr) => acc + curr, 0);
+    console.log(`Total resubmitted across all batches: ${totalResubmitCount}`);
+  } else {
+    executeBatch(0, totalResubmitCount);
+  }
+}
+
+async function executeBatch(currentBatch, totalResubmitCount) {
+  if (currentBatch >= taskBatches.length) {
+    console.log("All batches have been completed");
+    console.log(`Total resubmitted across all batches: ${totalResubmitCount}`);
+    // currentBatch = 0; // If I want to continue running
+    return; // Comment this out if I want to continue running
+  }
+  const currentDealerBatch = taskBatches[currentBatch].filter(
+    (dealer) => !dealershipsToSkip.includes(dealer)
+  );
+
+  const batchResubmitCount = await runTasks(currentDealerBatch, 0);
+  totalResubmitCount += batchResubmitCount;
+
+  console.log(`Batch ${currentBatch + 1} resubmitted: ${batchResubmitCount}`);
+  console.log(`Total resubmitted so far: ${totalResubmitCount}`);
+
+  setTimeout(
+    () => executeBatch(currentBatch, totalResubmitCount),
+    30 * 60 * 1000
+  ); // 30 minute wait
+  currentBatch++;
+}
+
+scheduleBatches().catch(console.error);
+
+/*
+
+
   let currentBatch = 0;
 
   const currentDealerBatch = taskBatches[currentBatch].filter(
@@ -213,17 +266,22 @@ async function scheduleBatches() {
     if (currentBatch >= taskBatches.length) {
       console.log("All batches have been ran; resetting to first batch");
       currentBatch = 0;
+      totalResubmitCount = 0;
     }
-
+    let totalResubmitCount = 0;
     console.log(`Starting batch ${currentBatch + 1}`);
-    await runTasks(currentDealerBatch);
+    await runTasks(currentDealerBatch, totalResubmitCount);
     currentBatch++;
-    setTimeout(executeBatch, 30 * 60 * 1000); // 5 minute wait
+
+    console.log(`Total resubmitted: ${totalResubmitCount}`);
+    setTimeout(executeBatch, 1 * 60 * 1000); // 5 minute wait
   }
   executeBatch();
 }
 
-scheduleBatches().catch(console.error);
+scheduleBatches().catch(console.error);*/
+
+//////////////////////////////////////////////////////
 /*
 async function main() {
   const tasks = [

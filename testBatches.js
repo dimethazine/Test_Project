@@ -32,6 +32,17 @@ async function scheduleBatches() {
 
     console.log(`Starting batch ${currentIndex + 1} of ${taskBatches.length}`);
     await runTasks(taskBatches[currentIndex]);
+
+    // I believe to run all of them, loop through it as:
+    /*
+  for (i = 0; i < taskBatches.length; i++) {
+    await runTasks(taskBatches[i]); 
+  }
+
+
+
+
+    */
     currentIndex++;
     setTimeout(executeBatch, 30 * 60 * 1000);
   }
